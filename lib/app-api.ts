@@ -8,7 +8,7 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as node from "aws-cdk-lib/aws-lambda-nodejs";
 import * as custom from "aws-cdk-lib/custom-resources";
 import { generateBatch } from "../shared/utils";
-import { movies } from "../seedData/movies";
+import { movies, reviews } from "../seedData/movies";
 
 type AppApiProps = {
   userPoolId: string;
@@ -28,6 +28,13 @@ export class AppApi extends Construct {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       tableName: "Movies",
     });
+
+    const reviewTable = new dynamodb.Table(this, "ReviewsTable",{
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: {name: "movieId", type: dynamodb.AttributeType.NUMBER},
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      tableName: "Reviews"
+    })
 
     const appCommonFnProps = {
       architecture: lambda.Architecture.ARM_64,
@@ -115,7 +122,21 @@ export class AppApi extends Construct {
           },
         });
 
-    // Seeding the table
+        //Review functions
+
+        const getReviewsByMovie = new lambdanode.NodejsFunction(this, "getReviewsByMovie",{
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_16_X,
+          entry: `./lambda/reviews/getReviewsByMovie.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: moviesTable.tableName,
+            REGION: "eu-west-1",
+          },
+        })
+
+    // Seeding the tables
     new custom.AwsCustomResource(this, "moviesddbInitData", {
       onCreate: {
         service: "DynamoDB",
@@ -123,12 +144,13 @@ export class AppApi extends Construct {
         parameters: {
           RequestItems: {
             [moviesTable.tableName]: generateBatch(movies),
+            [reviewTable.tableName]: generateBatch(reviews),
           },
         },
         physicalResourceId: custom.PhysicalResourceId.of("moviesddbInitData"), //.of(Date.now().toString()),
       },
       policy: custom.AwsCustomResourcePolicy.fromSdkCalls({
-        resources: [moviesTable.tableArn],  
+        resources: [moviesTable.tableArn, reviewTable.tableArn],  
       }),
     });
 
@@ -138,6 +160,8 @@ export class AppApi extends Construct {
       moviesTable.grantReadData(getMovieByIdFn)
       moviesTable.grantReadWriteData(newMovieFn)
       moviesTable.grantReadWriteData(removeMovieFn)
+
+      reviewTable.grantReadData(getReviewsByMovie)
 
 
       const appApi = new apig.RestApi(this, "AppApi", {
@@ -162,6 +186,10 @@ export class AppApi extends Construct {
     publicMovie.addMethod("GET", new apig.LambdaIntegration(getMovieByIdFn, {proxy: true}));
 
     publicMovie.addMethod("DELETE", new apig.LambdaIntegration(removeMovieFn, {proxy: true}));
+
+    const reviewsEndpoint = publicMovie.addResource("reviews");
+
+    reviewsEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByMovie, {proxy: true}));
 
 
 

@@ -12,7 +12,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
     // Print Event
     console.log("Event: ", event);
     const parameters  = event?.pathParameters;
-    const movieId = parameters?.movieId ? parseInt(parameters.movieId) : undefined;
+    const movieId = parameters?.movieId;
       
 
     if (!movieId) {
@@ -27,7 +27,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
 
     const commandOutput = await ddbDocClient.send(
       new GetCommand({
-        TableName: process.env.TABLE_NAME,
+        TableName: "Reviews",
         Key: { movieId: movieId },
       })
     );
@@ -44,7 +44,6 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
     let body = {
       data: commandOutput.Item
     };
-
 
     // Return Response
     return {
