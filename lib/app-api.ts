@@ -66,7 +66,7 @@ export class AppApi extends Construct {
         ...appCommonFnProps,
         architecture: lambda.Architecture.ARM_64,
         runtime: lambda.Runtime.NODEJS_16_X,
-        entry: `./lambda/getAllMovies.ts`,
+        entry: `./lambda/movies/getAllMovies.ts`,
         timeout: cdk.Duration.seconds(10),
         memorySize: 128,
         environment: {
@@ -75,6 +75,45 @@ export class AppApi extends Construct {
         },
       }
       );
+
+      const getMovieByIdFn = new lambdanode.NodejsFunction(
+        this,
+        "GetMovieByIdFn",
+        {
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_16_X,
+          entry: `./lambda/movies/getMovieById.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: moviesTable.tableName,
+            REGION: 'eu-west-1',
+          },
+        }
+        );
+        const newMovieFn = new lambdanode.NodejsFunction(this, "AddMovieFn", {
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_16_X,
+          entry: `./lambda/movies/addMovie.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: moviesTable.tableName,
+            REGION: "eu-west-1",
+          },
+        });
+
+        const removeMovieFn = new lambdanode.NodejsFunction(this, "RemoveMovieFn", {
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_16_X,
+          entry: `./lambda/movies/deleteMovie.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: moviesTable.tableName,
+            REGION: "eu-west-1",
+          },
+        });
 
     // Seeding the table
     new custom.AwsCustomResource(this, "moviesddbInitData", {
@@ -96,6 +135,11 @@ export class AppApi extends Construct {
     
       // Permissions
       moviesTable.grantReadData(getAllMoviesFn);
+      moviesTable.grantReadData(getMovieByIdFn)
+      moviesTable.grantReadWriteData(newMovieFn)
+      moviesTable.grantReadWriteData(removeMovieFn)
+
+
       const appApi = new apig.RestApi(this, "AppApi", {
         description: "App RestApi",
         endpointTypes: [apig.EndpointType.REGIONAL],
@@ -104,10 +148,24 @@ export class AppApi extends Construct {
         }
       });
 
+    // Public Routes
+
 
     const publicMovies = appApi.root.addResource("publicMovies");
 
     publicMovies.addMethod("GET", new apig.LambdaIntegration(getAllMoviesFn, {proxy: true}));
+
+    publicMovies.addMethod("POST", new apig.LambdaIntegration(newMovieFn, {proxy: true}));
+
+    const publicMovie = publicMovies.addResource("{movieId}");
+
+    publicMovie.addMethod("GET", new apig.LambdaIntegration(getMovieByIdFn, {proxy: true}));
+
+    publicMovie.addMethod("DELETE", new apig.LambdaIntegration(removeMovieFn, {proxy: true}));
+
+
+
+    // Private Routes
 
     const privateMovies = appApi.root.addResource("privateMovies");
 
