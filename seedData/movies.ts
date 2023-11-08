@@ -62,12 +62,22 @@ export const reviews: Review[] = [
     review: "Review 1 content",
     rating: 9,
     reviewDate: "2020-11-20",
+    reviewId: "1234-1234-1234-1234"
+  },
+  {
+    movieId: 1234,
+    username: "user2",
+    review: "Review 2 content",
+    rating: 8,
+    reviewDate: "2020-11-20",
+    reviewId: "2345-2345-2345-2345"
   },
   {
     movieId: 4567,
     username: "user2",
-    review: "Review 2 content",
+    review: "Review 3 content",
     rating: 8,
-    reviewDate: "2020-11-20"
+    reviewDate: "2020-11-20",
+    reviewId: "5678-5678-5678-5678"
   }
 ]

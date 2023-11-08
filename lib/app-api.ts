@@ -31,7 +31,7 @@ export class AppApi extends Construct {
 
     const reviewTable = new dynamodb.Table(this, "ReviewsTable",{
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: {name: "movieId", type: dynamodb.AttributeType.NUMBER},
+      partitionKey: {name: "reviewId", type: dynamodb.AttributeType.STRING},
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       tableName: "Reviews"
     })
@@ -124,14 +124,14 @@ export class AppApi extends Construct {
 
         //Review functions
 
-        const getReviewsByMovie = new lambdanode.NodejsFunction(this, "getReviewsByMovie",{
+        const getReviewsByMovieFn = new lambdanode.NodejsFunction(this, "getReviewsByMovieFn",{
           architecture: lambda.Architecture.ARM_64,
           runtime: lambda.Runtime.NODEJS_16_X,
           entry: `./lambda/reviews/getReviewsByMovie.ts`,
           timeout: cdk.Duration.seconds(10),
           memorySize: 128,
           environment: {
-            TABLE_NAME: moviesTable.tableName,
+            TABLE_NAME: reviewTable.tableName,
             REGION: "eu-west-1",
           },
         })
@@ -161,7 +161,7 @@ export class AppApi extends Construct {
       moviesTable.grantReadWriteData(newMovieFn)
       moviesTable.grantReadWriteData(removeMovieFn)
 
-      reviewTable.grantReadData(getReviewsByMovie)
+      reviewTable.grantReadData(getReviewsByMovieFn)
 
 
       const appApi = new apig.RestApi(this, "AppApi", {
@@ -189,7 +189,7 @@ export class AppApi extends Construct {
 
     const reviewsEndpoint = publicMovie.addResource("reviews");
 
-    reviewsEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByMovie, {proxy: true}));
+    reviewsEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByMovieFn, {proxy: true}));
 
 
 
