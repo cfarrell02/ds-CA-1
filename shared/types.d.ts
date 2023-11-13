@@ -34,5 +34,4 @@ export type SignUpBody = {
     review: string;
     rating: number;
     reviewDate: string;
-    reviewId: string;
   }

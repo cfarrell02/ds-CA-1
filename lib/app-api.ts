@@ -31,7 +31,8 @@ export class AppApi extends Construct {
 
     const reviewTable = new dynamodb.Table(this, "ReviewsTable",{
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: {name: "reviewId", type: dynamodb.AttributeType.STRING},
+      partitionKey: {name: "movieId", type: dynamodb.AttributeType.NUMBER},
+      sortKey: {name: "reviewDate", type: dynamodb.AttributeType.STRING},
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       tableName: "Reviews"
     })
@@ -136,6 +137,18 @@ export class AppApi extends Construct {
           },
         })
 
+        const addReviewFn = new lambdanode.NodejsFunction(this, "addReviewFn",{
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_16_X,
+          entry: `./lambda/reviews/addReview.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: reviewTable.tableName,
+            REGION: "eu-west-1",
+          },
+        })
+
     // Seeding the tables
     new custom.AwsCustomResource(this, "moviesddbInitData", {
       onCreate: {
@@ -162,6 +175,7 @@ export class AppApi extends Construct {
       moviesTable.grantReadWriteData(removeMovieFn)
 
       reviewTable.grantReadData(getReviewsByMovieFn)
+      reviewTable.grantReadWriteData(addReviewFn)
 
 
       const appApi = new apig.RestApi(this, "AppApi", {
@@ -187,9 +201,13 @@ export class AppApi extends Construct {
 
     publicMovie.addMethod("DELETE", new apig.LambdaIntegration(removeMovieFn, {proxy: true}));
 
-    const reviewsEndpoint = publicMovie.addResource("reviews");
+    const reviewsEndpoint = publicMovies.addResource("reviews");
 
-    reviewsEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByMovieFn, {proxy: true}));
+    reviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(addReviewFn, {proxy: true}));
+
+    const reviewEndpoint = publicMovie.addResource("reviews");
+
+    reviewEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByMovieFn, {proxy: true}));
 
 
 

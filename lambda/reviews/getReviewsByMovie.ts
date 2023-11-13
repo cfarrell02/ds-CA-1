@@ -1,7 +1,7 @@
 import { Handler } from "aws-lambda";
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommandOutput, QueryCommand} from "@aws-sdk/lib-dynamodb";
 
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 
@@ -13,6 +13,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
     console.log("Event: ", event);
     const parameters  = event?.pathParameters;
     const movieId = parameters?.movieId;
+    const queryStrings = event?.queryStringParameters;
+    const minRating = Number(queryStrings?.minRating);
+    
 
 
     if (!movieId) {
@@ -26,15 +29,15 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
     }
 
         const commandOutput = await ddbDocClient.send(
-          new ScanCommand({
+          new QueryCommand({
             TableName: "Reviews",
-            FilterExpression: "movieId = :id",
+            KeyConditionExpression: "movieId = :movieId",
             ExpressionAttributeValues: {
-              ":id": { N: movieId },
+              ":movieId": Number(movieId),
             },
           })
         );
-
+          
 
     console.log("GetCommand response: ", commandOutput);
     if (!commandOutput.Items) {
@@ -50,6 +53,10 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
       data: commandOutput.Items,
       id: movieId
     };
+
+    if (minRating) {
+      body.data = body.data.filter((review) => review.rating >= Number(minRating));
+    }
 
     // Return Response
     return {

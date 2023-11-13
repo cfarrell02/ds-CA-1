@@ -119,9 +119,6 @@
                 "rating": {
                     "type": "number"
                 },
-                "reviewId": {
-                    "type": "string"
-                },
                 "reviewDate": {
                     "type": "string"
                 }
@@ -131,7 +128,6 @@
                 "review",
                 "username",
                 "rating",
-                "reviewId",
                 "reviewDate"
             ],
             "type": "object"
@@ -141,9 +137,6 @@
             "properties": {
                 "movieId": {
                     "type": "number"
-                },
-                "reviewId": {
-                    "type": "string"
                 }
             },
             "type": "object"
