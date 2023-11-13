@@ -133,7 +133,7 @@
             "type": "object"
         },
         "ReviewQuery" : {
-            "additionalProperties": false,
+            "additionalProperties": true,
             "properties": {
                 "movieId": {
                     "type": "number"

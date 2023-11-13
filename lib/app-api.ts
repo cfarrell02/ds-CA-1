@@ -149,6 +149,42 @@ export class AppApi extends Construct {
           },
         })
 
+        const getReviewsByTypeFn = new lambdanode.NodejsFunction(this, "getReviewsByTypeFn",{
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_16_X,
+          entry: `./lambda/reviews/getReviewsByType.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: reviewTable.tableName,
+            REGION: "eu-west-1",
+          },
+        })
+
+        const getReviewsByReviewerFn = new lambdanode.NodejsFunction(this, "getReviewsByReviewerFn",{
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_16_X,
+          entry: `./lambda/reviews/getReviewsByName.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: reviewTable.tableName,
+            REGION: "eu-west-1",
+          },
+        })
+
+        const getTranslatedReviewFn = new lambdanode.NodejsFunction(this, "getTranslatedReviewFn",{
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_16_X,
+          entry: `./lambda/reviews/getTranslatedReview.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: reviewTable.tableName,
+            REGION: "eu-west-1",
+          },
+        })
+
     // Seeding the tables
     new custom.AwsCustomResource(this, "moviesddbInitData", {
       onCreate: {
@@ -176,6 +212,9 @@ export class AppApi extends Construct {
 
       reviewTable.grantReadData(getReviewsByMovieFn)
       reviewTable.grantReadWriteData(addReviewFn)
+      reviewTable.grantReadData(getReviewsByTypeFn)
+      reviewTable.grantReadData(getReviewsByReviewerFn)
+      reviewTable.grantReadData(getTranslatedReviewFn)
 
 
       const appApi = new apig.RestApi(this, "AppApi", {
@@ -204,10 +243,22 @@ export class AppApi extends Construct {
     const reviewsEndpoint = publicMovies.addResource("reviews");
 
     reviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(addReviewFn, {proxy: true}));
+    
+    const reviewsNameEndpoint = reviewsEndpoint.addResource("{reviewerName}");
+
+    reviewsNameEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByReviewerFn, {proxy: true}));
 
     const reviewEndpoint = publicMovie.addResource("reviews");
 
     reviewEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByMovieFn, {proxy: true}));
+
+    const reviewerEndpoint = reviewEndpoint.addResource("{type}");
+
+    reviewerEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByTypeFn, {proxy: true}));
+
+    const translationEndpoint = reviewerEndpoint.addResource("translation");
+
+    translationEndpoint.addMethod("GET", new apig.LambdaIntegration(getTranslatedReviewFn, {proxy: true}));
 
 
 
