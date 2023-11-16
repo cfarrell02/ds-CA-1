@@ -50,8 +50,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
 
     const query: QueryCommandInput = {
       TableName: "Reviews",
-      KeyConditionExpression: "movieId = :movieId",
-      FilterExpression: "username = :reviewName",
+      KeyConditionExpression: "movieId = :movieId AND username = :reviewName",
       ExpressionAttributeValues: {
         ":movieId": Number(movieId),
         ":reviewName": reviewName

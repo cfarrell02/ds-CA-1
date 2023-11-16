@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, QueryCommand, GetCommand} from "@aws-sdk/lib-dynamodb";
 import Ajv from "ajv";
 import schema from "../../shared/types.schema.json";
 
@@ -36,20 +36,41 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
     }
 
     //Check if movieId exists
-
     const movieId = body.movieId;
     const movie = await ddbDocClient.send(
-      new QueryCommand({
-        TableName: "Reviews",
-        KeyConditionExpression: "movieId = :movieId AND reviewDate = :reviewDate",
-        ExpressionAttributeValues: {
-          ":movieId": Number(movieId),
-          ":reviewDate": body.reviewDate,
+      new GetCommand({
+        TableName: "Movies",
+        Key: {
+          movieId: Number(movieId),
         },
       })
     );
 
-    if(movie.Items?.length || 0 > 0) {
+    if (!movie.Item) {
+      return {
+        statusCode: 404,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ message: "Movie not found" }),
+      };
+    }
+
+
+    //Check if review already exists
+
+    const reviews = await ddbDocClient.send(
+      new QueryCommand({
+        TableName: "Reviews",
+        KeyConditionExpression: "movieId = :movieId AND username = :reviewerName",
+        ExpressionAttributeValues: {
+          ":movieId": Number(movieId),
+          ":reviewerName": body.username
+        },
+      })
+    );
+
+    if(reviews.Items?.length || 0 > 0) {
         return {
             statusCode: 404,
             headers: {
