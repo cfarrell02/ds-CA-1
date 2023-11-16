@@ -2,6 +2,7 @@ import { Handler } from "aws-lambda";
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommandOutput, QueryCommand, QueryCommandInput } from "@aws-sdk/lib-dynamodb";
+import { TranslateClient, ListLanguagesCommand, TranslateTextCommand } from "@aws-sdk/client-translate";
 
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 
@@ -43,7 +44,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
             headers: {
             "content-type": "application/json",
             },
-            body: JSON.stringify({ Message: "Missing language code; please provide a language code"}),
+            body: JSON.stringify({ Message: "Missing language code; please provide a language"}),
         };
         }
 
@@ -75,9 +76,13 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
     let body = {
       data: commandOutput.Items,
       count: commandOutput.Count,
-      languageCode: languageCode,
+      languageCode: languageCode.toUpperCase(),
       movieId: movieId
     };
+
+    // Translate Review Text
+    const translatedReviewText = await translateReviewText(commandOutput.Items[0].review, languageCode);
+    body.data[0].review = translatedReviewText;
 
 
     // Return Response
@@ -112,4 +117,18 @@ function createDDbDocClient() {
   };
   const translateConfig = { marshallOptions, unmarshallOptions };
   return DynamoDBDocumentClient.from(ddbClient, translateConfig);
+}
+
+
+async function translateReviewText(reviewText: string, languageCode: string) {
+  const translateClient = new TranslateClient({ region: process.env.REGION });
+  const translateParams = {
+    Text: reviewText,
+    SourceLanguageCode: "en",
+    TargetLanguageCode: languageCode,
+  };
+  const translateCommand = new TranslateTextCommand(translateParams);
+  const translateOutput = await translateClient.send(translateCommand);
+  return translateOutput.TranslatedText;
+  
 }

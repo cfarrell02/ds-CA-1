@@ -9,6 +9,9 @@ import * as node from "aws-cdk-lib/aws-lambda-nodejs";
 import * as custom from "aws-cdk-lib/custom-resources";
 import { generateBatch } from "../shared/utils";
 import { movies, reviews } from "../seedData/movies";
+import * as iam from 'aws-cdk-lib/aws-iam';
+
+
 
 type AppApiProps = {
   userPoolId: string;
@@ -216,6 +219,18 @@ export class AppApi extends Construct {
       reviewTable.grantReadData(getReviewsByReviewerFn)
       reviewTable.grantReadData(getTranslatedReviewFn)
 
+      // Permission to access translate service for translation
+
+      const translatePolicyStatement = new iam.PolicyStatement({
+        actions: ["translate:TranslateText"],
+        resources: ["*"],
+      });
+
+      getTranslatedReviewFn.addToRolePolicy(translatePolicyStatement)
+
+      
+      
+      // API Gateway
 
       const appApi = new apig.RestApi(this, "AppApi", {
         description: "App RestApi",
