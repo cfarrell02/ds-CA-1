@@ -50,12 +50,12 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
     const regex = new RegExp("20[0-9][0-9]");
     if (regex.test(type)) {
       // Type is a year, so want to compare to first 4 digits of reviewDate
-      query.KeyConditionExpression += " AND begins_with(reviewDate, :type)";
+      query.FilterExpression = "begins_with(reviewDate, :type)";
       query.ExpressionAttributeValues![":type"] = type.substring(0, 4);
       queryType = "year";
     } else {
       // Assume it is a reviewer name
-      query.FilterExpression = "username = :type"
+      query.KeyConditionExpression += " AND begins_with(username, :type)";
       query.ExpressionAttributeValues![":type"] = type;
       queryType = "reviewer";
     }

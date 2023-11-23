@@ -35,7 +35,7 @@ export class AppApi extends Construct {
     const reviewTable = new dynamodb.Table(this, "ReviewsTable",{
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: {name: "movieId", type: dynamodb.AttributeType.NUMBER},
-      sortKey: {name: "reviewDate", type: dynamodb.AttributeType.STRING},
+      sortKey: {name: "username", type: dynamodb.AttributeType.STRING},
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       tableName: "Reviews"
     })
@@ -188,6 +188,18 @@ export class AppApi extends Construct {
           },
         })
 
+        const updateReviewFn = new lambdanode.NodejsFunction(this, "updateReviewFn",{
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_16_X,
+          entry: `./lambda/reviews/updateReview.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: reviewTable.tableName,
+            REGION: "eu-west-1",
+          },
+        })
+
     // Seeding the tables
     new custom.AwsCustomResource(this, "moviesddbInitData", {
       onCreate: {
@@ -228,7 +240,7 @@ export class AppApi extends Construct {
 
       getTranslatedReviewFn.addToRolePolicy(translatePolicyStatement)
 
-      
+
       
       // API Gateway
 
@@ -242,35 +254,37 @@ export class AppApi extends Construct {
 
     // Public Routes
 
-
+    // /publicMovies
     const publicMovies = appApi.root.addResource("publicMovies");
 
     publicMovies.addMethod("GET", new apig.LambdaIntegration(getAllMoviesFn, {proxy: true}));
 
     publicMovies.addMethod("POST", new apig.LambdaIntegration(newMovieFn, {proxy: true}));
-
+    // /publicMovies/{movieId}  
     const publicMovie = publicMovies.addResource("{movieId}");
 
     publicMovie.addMethod("GET", new apig.LambdaIntegration(getMovieByIdFn, {proxy: true}));
 
     publicMovie.addMethod("DELETE", new apig.LambdaIntegration(removeMovieFn, {proxy: true}));
-
+    // /publicMovies/reviews
     const reviewsEndpoint = publicMovies.addResource("reviews");
 
     reviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(addReviewFn, {proxy: true}));
-    
+    // /publicMovies/{movieId}/reviews/{reviewerName}
     const reviewsNameEndpoint = reviewsEndpoint.addResource("{reviewerName}");
 
     reviewsNameEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByReviewerFn, {proxy: true}));
-
+    // /publicMovies/reviews
     const reviewEndpoint = publicMovie.addResource("reviews");
 
     reviewEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByMovieFn, {proxy: true}));
-
+    // /publicMovies/reviews/{type}
     const reviewerEndpoint = reviewEndpoint.addResource("{type}");
 
     reviewerEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByTypeFn, {proxy: true}));
 
+    reviewerEndpoint.addMethod("PUT", new apig.LambdaIntegration(updateReviewFn, {proxy: true}));
+    // /publicMovies/reviews/{type}/translation
     const translationEndpoint = reviewerEndpoint.addResource("translation");
 
     translationEndpoint.addMethod("GET", new apig.LambdaIntegration(getTranslatedReviewFn, {proxy: true}));
@@ -278,7 +292,7 @@ export class AppApi extends Construct {
 
 
     // Private Routes
-
+    // /privateMovies
     const privateMovies = appApi.root.addResource("privateMovies");
 
     privateMovies.addMethod(

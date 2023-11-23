@@ -11,7 +11,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
     const parameters  = event?.pathParameters;
     const movieId = parameters?.movieId;
     const reviewerName = parameters?.reviewerName;
-    const reviewText = event?.body;
+    const body = event.body ? JSON.parse(event.body) : undefined;
+    const reviewText = body.review;
 
     try {
         const commandOutput = await ddbDocClient.send(
