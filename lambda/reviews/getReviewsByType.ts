@@ -46,7 +46,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
 
     let queryType = "";
 
-    //Regex on type to see if it is 20NN 
+    //Regex on type to see if it is 20NN aka a year
     const regex = new RegExp("20[0-9][0-9]");
     if (regex.test(type)) {
       // Type is a year, so want to compare to first 4 digits of reviewDate

@@ -224,9 +224,11 @@ export class AppApi extends Construct {
       moviesTable.grantReadData(getMovieByIdFn)
       moviesTable.grantReadWriteData(newMovieFn)
       moviesTable.grantReadWriteData(removeMovieFn)
+      moviesTable.grantReadData(addReviewFn) //Added as movie is checked to exist before review is added
 
       reviewTable.grantReadData(getReviewsByMovieFn)
       reviewTable.grantReadWriteData(addReviewFn)
+      reviewTable.grantReadWriteData(updateReviewFn)
       reviewTable.grantReadData(getReviewsByTypeFn)
       reviewTable.grantReadData(getReviewsByReviewerFn)
       reviewTable.grantReadData(getTranslatedReviewFn)
@@ -270,21 +272,21 @@ export class AppApi extends Construct {
     const reviewsEndpoint = publicMovies.addResource("reviews");
 
     reviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(addReviewFn, {proxy: true}));
-    // /publicMovies/{movieId}/reviews/{reviewerName}
+    // /publicMovies/reviews/{reviewerName}
     const reviewsNameEndpoint = reviewsEndpoint.addResource("{reviewerName}");
 
     reviewsNameEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByReviewerFn, {proxy: true}));
-    // /publicMovies/reviews
+    // /publicMovies/{movieId}/reviews
     const reviewEndpoint = publicMovie.addResource("reviews");
 
     reviewEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByMovieFn, {proxy: true}));
-    // /publicMovies/reviews/{type}
+    // /publicMovies/{movieId}/reviews/{type}
     const reviewerEndpoint = reviewEndpoint.addResource("{type}");
 
     reviewerEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByTypeFn, {proxy: true}));
 
     reviewerEndpoint.addMethod("PUT", new apig.LambdaIntegration(updateReviewFn, {proxy: true}));
-    // /publicMovies/reviews/{type}/translation
+    // /publicMovies/{movieId}/reviews/{type}/translation
     const translationEndpoint = reviewerEndpoint.addResource("translation");
 
     translationEndpoint.addMethod("GET", new apig.LambdaIntegration(getTranslatedReviewFn, {proxy: true}));

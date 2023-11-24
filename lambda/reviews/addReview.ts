@@ -3,6 +3,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, QueryCommand, GetCommand} from "@aws-sdk/lib-dynamodb";
 import Ajv from "ajv";
 import schema from "../../shared/types.schema.json";
+import { get } from "http";
 
 const ajv = new Ajv();
 const isValidBodyParams = ajv.compile(schema.definitions["Review"] || {});
@@ -60,17 +61,15 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
     //Check if review already exists
 
     const reviews = await ddbDocClient.send(
-      new QueryCommand({
+      new GetCommand({
         TableName: "Reviews",
-        KeyConditionExpression: "movieId = :movieId AND username = :reviewerName",
-        ExpressionAttributeValues: {
-          ":movieId": Number(movieId),
-          ":reviewerName": body.username
+        Key: {
+          movieId: Number(movieId),
+          username: body.username,
         },
-      })
-    );
+      }));
 
-    if(reviews.Items?.length || 0 > 0) {
+    if(reviews.Item) {
         return {
             statusCode: 404,
             headers: {
@@ -79,11 +78,10 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
             body: JSON.stringify({ message: "Review already exists"}),
         };
         }
-
-
+  
     const commandOutput = await ddbDocClient.send(
       new PutCommand({
-        TableName: process.env.TABLE_NAME,
+        TableName: "Reviews",
         Item: body,
       })
     );
