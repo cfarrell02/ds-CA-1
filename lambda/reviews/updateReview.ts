@@ -1,7 +1,7 @@
 import { Handler } from "aws-lambda";
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, QueryCommand, UpdateCommand, UpdateCommandInput} from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, UpdateCommand, UpdateCommandInput} from "@aws-sdk/lib-dynamodb";
 
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 
@@ -15,6 +15,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
         const body = event.body ? JSON.parse(event.body) : undefined;
         const reviewText = body.review;
         const ratingNumber = Number(body.rating);
+
     
     if(!body || !reviewText) {
         return {
@@ -23,6 +24,27 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
                 "content-type": "application/json",
             },
             body: JSON.stringify({ Message: "Missing review text, rating is optional" , schema: "{review: string , rating: number}"}),
+        };
+    }
+
+    //Check to make sure review already exists
+    const movie = await ddbDocClient.send(
+        new GetCommand({
+            TableName: "Reviews",
+            Key: {
+                movieId: Number(movieId),
+                username: reviewerName
+            },
+        })
+    );
+
+    if (!movie.Item) {
+        return {
+            statusCode: 404,
+            headers: {
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({ message: "Review not found" }),
         };
     }
 
