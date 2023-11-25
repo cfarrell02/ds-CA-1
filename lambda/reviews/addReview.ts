@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, QueryCommand, GetCommand} from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, QueryCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import Ajv from "ajv";
 import schema from "../../shared/types.schema.json";
 import { get } from "http";
@@ -10,7 +10,7 @@ const isValidBodyParams = ajv.compile(schema.definitions["Review"] || {});
 const ddbDocClient = createDDbDocClient();
 
 export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // Note change 
-   try {
+  try {
     const body = event.body ? JSON.parse(event.body) : undefined;
 
     if (!body) {
@@ -36,29 +36,21 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
       };
     }
 
-    //Check if movieId exists
-    const movieId = body.movieId;
-    const movie = await ddbDocClient.send(
-      new GetCommand({
-        TableName: "Movies",
-        Key: {
-          movieId: Number(movieId),
-        },
-      })
-    );
+    //Ensure rating is between 1 and 10
+    const rating = body.rating ? Number(body.rating) : 0;
 
-    if (!movie.Item) {
+    if (rating < 1 || rating > 10) {
       return {
-        statusCode: 404,
+        statusCode: 500,
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ message: "Movie not found" }),
+        body: JSON.stringify({ message: "Rating must be between 1 and 10" }),
       };
     }
 
 
-    //Check if review already exists
+    const movieId = body.movieId;
 
     const reviews = await ddbDocClient.send(
       new GetCommand({
@@ -69,16 +61,16 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
         },
       }));
 
-    if(reviews.Item) {
-        return {
-            statusCode: 404,
-            headers: {
-            "content-type": "application/json",
-            },
-            body: JSON.stringify({ message: "Review already exists"}),
-        };
-        }
-  
+    if (reviews.Item) {
+      return {
+        statusCode: 404,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ message: "Review already exists" }),
+      };
+    }
+
     const commandOutput = await ddbDocClient.send(
       new PutCommand({
         TableName: "Reviews",
@@ -86,16 +78,16 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
       })
     );
 
-    if(commandOutput.$metadata.httpStatusCode !== 200) {
-        return {
-            statusCode: 500,
-            headers: {
-            "content-type": "application/json",
-            },
-            body: JSON.stringify({ message: "Review not added" }),
-        };
-        }
-        
+    if (commandOutput.$metadata.httpStatusCode !== 200) {
+      return {
+        statusCode: 500,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ message: "Review not added" }),
+      };
+    }
+
 
     return {
       statusCode: 201,
@@ -106,7 +98,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
     };
 
 
-   } catch (error: any) {
+  } catch (error: any) {
     console.log(JSON.stringify(error));
     return {
       statusCode: 500,

@@ -53,57 +53,6 @@
             ],
             "type": "object"
         },
-        "Movie": {
-            "additionalProperties": false,
-            "properties": {
-                "genre_ids": {
-                    "items": {
-                        "type": "number"
-                    },
-                    "type": "array"
-                },
-                "movieId": {
-                    "type": "number"
-                },
-                "original_language": {
-                    "type": "string"
-                },
-                "overview": {
-                    "type": "string"
-                },
-                "popularity": {
-                    "type": "number"
-                },
-                "release_date": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "video": {
-                    "type": "boolean"
-                },
-                "vote_average": {
-                    "type": "number"
-                },
-                "vote_count": {
-                    "type": "number"
-                }
-            },
-            "required": [
-                "genre_ids",
-                "movieId",
-                "original_language",
-                "overview",
-                "popularity",
-                "release_date",
-                "title",
-                "video",
-                "vote_average",
-                "vote_count"
-            ],
-            "type": "object"
-        },
         "Review":{
             "additionalProperties": false,
             "properties": {

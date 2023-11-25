@@ -39,14 +39,14 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
     }
 
     if (!languageCode) {
-        return {
-            statusCode: 404,
-            headers: {
-            "content-type": "application/json",
-            },
-            body: JSON.stringify({ Message: "Missing language code; please provide a language"}),
-        };
-        }
+      return {
+        statusCode: 404,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ Message: "Missing language code; please provide a language" }),
+      };
+    }
 
     const query: QueryCommandInput = {
       TableName: "Reviews",
@@ -129,5 +129,5 @@ async function translateReviewText(reviewText: string, languageCode: string) {
   const translateCommand = new TranslateTextCommand(translateParams);
   const translateOutput = await translateClient.send(translateCommand);
   return translateOutput.TranslatedText;
-  
+
 }

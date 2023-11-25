@@ -1,7 +1,7 @@
 import { Handler } from "aws-lambda";
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, QueryCommandOutput, QueryCommand, QueryCommandInput } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommandOutput, QueryCommand, GetCommandOutput, GetCommand } from "@aws-sdk/lib-dynamodb";
 
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 
@@ -36,37 +36,44 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
       };
     }
 
-    const query: QueryCommandInput = {
-      TableName: "Reviews",
-      KeyConditionExpression: "movieId = :movieId",
-      ExpressionAttributeValues: {
-        ":movieId": Number(movieId),
-      },
-    };
-
     let queryType = "";
+    let commandOutput;
 
     //Regex on type to see if it is 20NN aka a year
     const regex = new RegExp("20[0-9][0-9]");
     if (regex.test(type)) {
       // Type is a year, so want to compare to first 4 digits of reviewDate
-      query.FilterExpression = "begins_with(reviewDate, :type)";
-      query.ExpressionAttributeValues![":type"] = type.substring(0, 4);
+      commandOutput = await ddbDocClient.send(
+        new QueryCommand(
+          {
+            TableName: "Reviews",
+            KeyConditionExpression: "movieId = :movieId",
+            FilterExpression: "begins_with(reviewDate, :type)",
+            ExpressionAttributeValues: {
+              ":movieId": Number(movieId),
+              ":type": type.substring(0, 4)
+            },
+          }));
       queryType = "year";
     } else {
-      // Assume it is a reviewer name
-      query.KeyConditionExpression += " AND begins_with(username, :type)";
-      query.ExpressionAttributeValues![":type"] = type;
+      // Type is a reviewer name so do get
+      commandOutput = await ddbDocClient.send(
+        new GetCommand({
+          TableName: "Reviews",
+          Key: {
+            movieId: Number(movieId),
+            username: type
+          },
+        })
+      );
       queryType = "reviewer";
     }
 
-    const commandOutput = await ddbDocClient.send(
-      new QueryCommand(query)
-    );
+    const result = commandOutput.Items ? commandOutput.Items : commandOutput.Item;
 
 
     console.log("GetCommand response: ", commandOutput);
-    if (!commandOutput.Items) {
+    if (!result) {
       return {
         statusCode: 404,
         headers: {
@@ -76,8 +83,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => { // 
       };
     }
     let body = {
-      data: commandOutput.Items,
-      count: commandOutput.Count,
+      data: result,
+      count: commandOutput.Count ? commandOutput.Count : 1,
       queryType: queryType,
       movieId: movieId
     };

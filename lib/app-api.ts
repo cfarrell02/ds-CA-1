@@ -24,18 +24,11 @@ export class AppApi extends Construct {
 
 
 
-    // Tables 
-    const moviesTable = new dynamodb.Table(this, "MoviesTable", {
+    // Table
+    const reviewTable = new dynamodb.Table(this, "ReviewsTable", {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: { name: "movieId", type: dynamodb.AttributeType.NUMBER },
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      tableName: "Movies",
-    });
-
-    const reviewTable = new dynamodb.Table(this, "ReviewsTable",{
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: {name: "movieId", type: dynamodb.AttributeType.NUMBER},
-      sortKey: {name: "username", type: dynamodb.AttributeType.STRING},
+      sortKey: { name: "username", type: dynamodb.AttributeType.STRING },
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       tableName: "Reviews"
     })
@@ -70,135 +63,81 @@ export class AppApi extends Construct {
 
     // Movies Functions
 
-    const getAllMoviesFn = new lambdanode.NodejsFunction(
-      this,
-      "GetAllMoviesFn",
-      {
-        ...appCommonFnProps,
-        architecture: lambda.Architecture.ARM_64,
-        runtime: lambda.Runtime.NODEJS_16_X,
-        entry: `./lambda/movies/getAllMovies.ts`,
-        timeout: cdk.Duration.seconds(10),
-        memorySize: 128,
-        environment: {
-          TABLE_NAME: moviesTable.tableName,
-          REGION: 'eu-west-1',
-        },
-      }
-      );
 
-      const getMovieByIdFn = new lambdanode.NodejsFunction(
-        this,
-        "GetMovieByIdFn",
-        {
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_16_X,
-          entry: `./lambda/movies/getMovieById.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: moviesTable.tableName,
-            REGION: 'eu-west-1',
-          },
-        }
-        );
-        const newMovieFn = new lambdanode.NodejsFunction(this, "AddMovieFn", {
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_16_X,
-          entry: `./lambda/movies/addMovie.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: moviesTable.tableName,
-            REGION: "eu-west-1",
-          },
-        });
 
-        const removeMovieFn = new lambdanode.NodejsFunction(this, "RemoveMovieFn", {
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_16_X,
-          entry: `./lambda/movies/deleteMovie.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: moviesTable.tableName,
-            REGION: "eu-west-1",
-          },
-        });
+    //Review functions
 
-        //Review functions
+    const getReviewsByMovieFn = new lambdanode.NodejsFunction(this, "getReviewsByMovieFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `./lambda/reviews/getReviewsByMovie.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: reviewTable.tableName,
+        REGION: "eu-west-1",
+      },
+    })
 
-        const getReviewsByMovieFn = new lambdanode.NodejsFunction(this, "getReviewsByMovieFn",{
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_16_X,
-          entry: `./lambda/reviews/getReviewsByMovie.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: reviewTable.tableName,
-            REGION: "eu-west-1",
-          },
-        })
+    const addReviewFn = new lambdanode.NodejsFunction(this, "addReviewFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `./lambda/reviews/addReview.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: reviewTable.tableName,
+        REGION: "eu-west-1",
+      },
+    })
 
-        const addReviewFn = new lambdanode.NodejsFunction(this, "addReviewFn",{
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_16_X,
-          entry: `./lambda/reviews/addReview.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: reviewTable.tableName,
-            REGION: "eu-west-1",
-          },
-        })
+    const getReviewsByTypeFn = new lambdanode.NodejsFunction(this, "getReviewsByTypeFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `./lambda/reviews/getReviewsByType.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: reviewTable.tableName,
+        REGION: "eu-west-1",
+      },
+    })
 
-        const getReviewsByTypeFn = new lambdanode.NodejsFunction(this, "getReviewsByTypeFn",{
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_16_X,
-          entry: `./lambda/reviews/getReviewsByType.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: reviewTable.tableName,
-            REGION: "eu-west-1",
-          },
-        })
+    const getReviewsByReviewerFn = new lambdanode.NodejsFunction(this, "getReviewsByReviewerFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `./lambda/reviews/getReviewsByName.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: reviewTable.tableName,
+        REGION: "eu-west-1",
+      },
+    })
 
-        const getReviewsByReviewerFn = new lambdanode.NodejsFunction(this, "getReviewsByReviewerFn",{
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_16_X,
-          entry: `./lambda/reviews/getReviewsByName.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: reviewTable.tableName,
-            REGION: "eu-west-1",
-          },
-        })
+    const getTranslatedReviewFn = new lambdanode.NodejsFunction(this, "getTranslatedReviewFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `./lambda/reviews/getTranslatedReview.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: reviewTable.tableName,
+        REGION: "eu-west-1",
+      },
+    })
 
-        const getTranslatedReviewFn = new lambdanode.NodejsFunction(this, "getTranslatedReviewFn",{
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_16_X,
-          entry: `./lambda/reviews/getTranslatedReview.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: reviewTable.tableName,
-            REGION: "eu-west-1",
-          },
-        })
-
-        const updateReviewFn = new lambdanode.NodejsFunction(this, "updateReviewFn",{
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_16_X,
-          entry: `./lambda/reviews/updateReview.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: reviewTable.tableName,
-            REGION: "eu-west-1",
-          },
-        })
+    const updateReviewFn = new lambdanode.NodejsFunction(this, "updateReviewFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `./lambda/reviews/updateReview.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: reviewTable.tableName,
+        REGION: "eu-west-1",
+      },
+    })
 
     // Seeding the tables
     new custom.AwsCustomResource(this, "moviesddbInitData", {
@@ -207,105 +146,86 @@ export class AppApi extends Construct {
         action: "batchWriteItem",
         parameters: {
           RequestItems: {
-            [moviesTable.tableName]: generateBatch(movies),
             [reviewTable.tableName]: generateBatch(reviews),
           },
         },
         physicalResourceId: custom.PhysicalResourceId.of("moviesddbInitData"), //.of(Date.now().toString()),
       },
       policy: custom.AwsCustomResourcePolicy.fromSdkCalls({
-        resources: [moviesTable.tableArn, reviewTable.tableArn],  
+        resources: [reviewTable.tableArn],
       }),
     });
 
-    
-      // Permissions
-      moviesTable.grantReadData(getAllMoviesFn);
-      moviesTable.grantReadData(getMovieByIdFn)
-      moviesTable.grantReadWriteData(newMovieFn)
-      moviesTable.grantReadWriteData(removeMovieFn)
-      moviesTable.grantReadData(addReviewFn) //Added as movie is checked to exist before review is added
 
-      reviewTable.grantReadData(getReviewsByMovieFn)
-      reviewTable.grantReadWriteData(addReviewFn)
-      reviewTable.grantReadWriteData(updateReviewFn)
-      reviewTable.grantReadData(getReviewsByTypeFn)
-      reviewTable.grantReadData(getReviewsByReviewerFn)
-      reviewTable.grantReadData(getTranslatedReviewFn)
+    // Permissions
 
-      // Permission to access translate service for translation
+    reviewTable.grantReadData(getReviewsByMovieFn)
+    reviewTable.grantReadWriteData(addReviewFn)
+    reviewTable.grantReadWriteData(updateReviewFn)
+    reviewTable.grantReadData(getReviewsByTypeFn)
+    reviewTable.grantReadData(getReviewsByReviewerFn)
+    reviewTable.grantReadData(getTranslatedReviewFn)
 
-      const translatePolicyStatement = new iam.PolicyStatement({
-        actions: ["translate:TranslateText"],
-        resources: ["*"],
-      });
+    // Permission to access translate service for translation
 
-      getTranslatedReviewFn.addToRolePolicy(translatePolicyStatement)
+    const translatePolicyStatement = new iam.PolicyStatement({
+      actions: ["translate:TranslateText"],
+      resources: ["*"],
+    });
 
-
-      
-      // API Gateway
-
-      const appApi = new apig.RestApi(this, "AppApi", {
-        description: "App RestApi",
-        endpointTypes: [apig.EndpointType.REGIONAL],
-        defaultCorsPreflightOptions: {
-          allowOrigins: apig.Cors.ALL_ORIGINS,
-        }
-      });
-
-    // Public Routes
-
-    // /publicMovies
-    const publicMovies = appApi.root.addResource("publicMovies");
-
-    publicMovies.addMethod("GET", new apig.LambdaIntegration(getAllMoviesFn, {proxy: true}));
-
-    publicMovies.addMethod("POST", new apig.LambdaIntegration(newMovieFn, {proxy: true}));
-    // /publicMovies/{movieId}  
-    const publicMovie = publicMovies.addResource("{movieId}");
-
-    publicMovie.addMethod("GET", new apig.LambdaIntegration(getMovieByIdFn, {proxy: true}));
-
-    publicMovie.addMethod("DELETE", new apig.LambdaIntegration(removeMovieFn, {proxy: true}));
-    // /publicMovies/reviews
-    const reviewsEndpoint = publicMovies.addResource("reviews");
-
-    reviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(addReviewFn, {proxy: true}));
-    // /publicMovies/reviews/{reviewerName}
-    const reviewsNameEndpoint = reviewsEndpoint.addResource("{reviewerName}");
-
-    reviewsNameEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByReviewerFn, {proxy: true}));
-    // /publicMovies/{movieId}/reviews
-    const reviewEndpoint = publicMovie.addResource("reviews");
-
-    reviewEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByMovieFn, {proxy: true}));
-    // /publicMovies/{movieId}/reviews/{type}
-    const reviewerEndpoint = reviewEndpoint.addResource("{type}");
-
-    reviewerEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByTypeFn, {proxy: true}));
-
-    reviewerEndpoint.addMethod("PUT", new apig.LambdaIntegration(updateReviewFn, {proxy: true}));
-    // /publicMovies/{movieId}/reviews/{type}/translation
-    const translationEndpoint = reviewerEndpoint.addResource("translation");
-
-    translationEndpoint.addMethod("GET", new apig.LambdaIntegration(getTranslatedReviewFn, {proxy: true}));
+    getTranslatedReviewFn.addToRolePolicy(translatePolicyStatement)
 
 
 
-    // Private Routes
-    // /privateMovies
-    const privateMovies = appApi.root.addResource("privateMovies");
+    // API Gateway
 
-    privateMovies.addMethod(
-      "GET",
-      new apig.LambdaIntegration(getAllMoviesFn, {proxy: true}),
+    const appApi = new apig.RestApi(this, "AppApi", {
+      description: "App RestApi",
+      endpointTypes: [apig.EndpointType.REGIONAL],
+      defaultCorsPreflightOptions: {
+        allowOrigins: apig.Cors.ALL_ORIGINS,
+      }
+    });
+
+
+
+    // /movies
+    const moviesEndpoint = appApi.root.addResource("movies");
+
+
+    // /movies/{movieId}  
+    const publicMovie = moviesEndpoint.addResource("{movieId}");
+
+
+    // /movies/reviews
+    const reviewsEndpoint = moviesEndpoint.addResource("reviews");
+
+    reviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(addReviewFn, { proxy: true }),
       {
         authorizer: requestAuthorizer,
         authorizationType: apig.AuthorizationType.CUSTOM,
-      }
-    );
+      });
+    // /movies/reviews/{reviewerName}
+    const reviewsNameEndpoint = reviewsEndpoint.addResource("{reviewerName}");
 
+    reviewsNameEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByReviewerFn, { proxy: true }));
+    // /movies/{movieId}/reviews
+    const reviewEndpoint = publicMovie.addResource("reviews");
+
+    reviewEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByMovieFn, { proxy: true }));
+    // /movies/{movieId}/reviews/{type}
+    const reviewerEndpoint = reviewEndpoint.addResource("{type}");
+
+    reviewerEndpoint.addMethod("GET", new apig.LambdaIntegration(getReviewsByTypeFn, { proxy: true }));
+
+    reviewerEndpoint.addMethod("PUT", new apig.LambdaIntegration(updateReviewFn, { proxy: true }), {
+      authorizer: requestAuthorizer,
+      authorizationType: apig.AuthorizationType.CUSTOM,
+    });
+    // /movies/{movieId}/reviews/{type}/translation
+    const translationEndpoint = reviewerEndpoint.addResource("translation");
+
+    translationEndpoint.addMethod("GET", new apig.LambdaIntegration(getTranslatedReviewFn, { proxy: true }));
 
   }
 }
