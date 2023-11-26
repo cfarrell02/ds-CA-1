@@ -33,7 +33,8 @@ This endpoint demonstrates `getreviewsbymovie`, returning all reviews for a spec
 
 ![Get All Reviews by Username](./images/getallreviewsbyusername.png)
 **GET /movies/reviews/{reviewerName}**  
-This image represents the `getreviewsbyname` endpoint, retrieving all reviews associated with a particular username across different movies.
+This image represents the `getreviewsbyname` endpoint, retrieving all reviews associated with a particular username across different movies.  
+(NOTE: Due to required architecture of table in CA spec, this endpoint uses SCAN command and can be resource inefficient with large tables.)
 
 ![Get Reviews by Type](./images/getreviewsbytype.png)
 **GET /movies/{movieId}/reviews/{type}** (Type can be either username or year)  
