@@ -64,3 +64,8 @@ I utilized AWS Translate to incorporate translation options for reviews, which i
 ./lamba/reviews/getTranslatedReview.ts
 ```
 The Lambda function (`getTranslatedReview.ts`) uses AWS Translate to dynamically translate review text based on user-provided language codes. Using TranslateClient and TranslateTextCommand from the AWS SDK, it fetches reviews from DynamoDB and translates content on-the-fly. This enables users to access reviews in their preferred language, enhancing accessibility within the application.
+
+
+### References
+
+Giving access to `getTranslatedReview.ts` to allow for translations was written with help from [here](https://docs.aws.amazon.com/cdk/v2/guide/permissions.html).
